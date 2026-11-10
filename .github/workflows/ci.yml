@@ -1,0 +1,19 @@
+name: CI
+
+# Lints this repo with its own reusable workflow
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  lint:
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    uses: ./.github/workflows/lint.yml

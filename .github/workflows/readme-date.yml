@@ -1,0 +1,44 @@
+name: Update README date
+
+# Rewrites a `_Last updated: YYYY-MM-DD_` line. The caller owns the trigger and concurrency group.
+on:
+  workflow_call:
+    inputs:
+      readme-path:
+        type: string
+        default: README.md
+
+permissions: {}
+
+jobs:
+  update-date:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Update date
+        env:
+          README: ${{ inputs.readme-path }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          sed -i "s/_Last updated:.*_/_Last updated: ${DATE}_/" "$README"
+
+      # GITHUB_TOKEN pushes don't trigger workflows, so this can't loop
+      - name: Commit and push if changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          README: ${{ inputs.readme-path }}
+        run: |
+          if git diff --quiet -- "$README"; then
+            echo "Date already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update README date" -- "$README"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF_NAME}"
